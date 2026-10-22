@@ -179,6 +179,28 @@ check('carol sees only her invites', (await carol.req('GET', '/api/invites')).da
 check('carol cannot list users -> 403', (await carol.req('GET', '/api/admin/users')).status, 403)
 check('foreign list untouched', (await admin.req('GET', `/api/lists/${list.id}`)).data.name, 'Közös')
 
+console.log('# households')
+const homeUrl = `/api/households/${homeId}`
+const bobId = (await bob.req('GET', '/api/me')).data.id
+const bobView = (await bob.req('GET', homeUrl)).data
+check('member sees household members', bobView.members.map((m) => m.name).join(','), 'Admin,Bob')
+check('member cannot manage', bobView.canManage, false)
+check('outsider cannot see the household -> 404', (await carol.req('GET', homeUrl)).status, 404)
+check('member cannot rename -> 403', (await bob.req('PATCH', homeUrl, { name: 'x' })).status, 403)
+check('owner renames household', (await admin.req('PATCH', homeUrl, { name: 'Otthonunk' })).data.name, 'Otthonunk')
+check('member cannot remove others -> 403', (await bob.req('DELETE', `${homeUrl}/members/${adminMe.id}`)).status, 403)
+check('last owner cannot leave -> 400', (await admin.req('DELETE', `${homeUrl}/members/${adminMe.id}`)).status, 400)
+check('last owner cannot be demoted -> 400', (await admin.req('PATCH', `${homeUrl}/members/${adminMe.id}`, { role: 'member' })).status, 400)
+check('owner promotes member', (await admin.req('PATCH', `${homeUrl}/members/${bobId}`, { role: 'owner' })).data.role, 'owner')
+check('new owner demotes the old one', (await bob.req('PATCH', `${homeUrl}/members/${adminMe.id}`, { role: 'member' })).status, 200)
+check('now bob is the last owner and cannot leave -> 400', (await bob.req('DELETE', `${homeUrl}/members/${bobId}`)).status, 400)
+await bob.req('PATCH', `${homeUrl}/members/${adminMe.id}`, { role: 'owner' })
+check('member leaves the household', (await bob.req('DELETE', `${homeUrl}/members/${bobId}`)).status, 204)
+check('after leaving: no lists', (await bob.req('GET', '/api/lists')).data.length, 0)
+check('after leaving: household hidden -> 404', (await bob.req('GET', homeUrl)).status, 404)
+check('last member cannot leave -> 400', (await carol.req('DELETE', `/api/households/${carolMe.households[0].id}/members/${carolMe.id}`)).status, 400)
+check('removing a non-member -> 404', (await admin.req('DELETE', `${homeUrl}/members/${bobId}`)).status, 404)
+
 console.log('# login')
 const fresh = new Client('bob-2')
 const { res: loginRes, body: loginBody } = await fresh.login(bobKey)

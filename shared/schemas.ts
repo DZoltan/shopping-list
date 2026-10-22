@@ -77,6 +77,17 @@ export const registerUserSchema = z
 
 export const tokenQuerySchema = z.object({ token })
 
+// --- households ---
+
+export const memberParamsSchema = z.object({
+  id: z.coerce.number().int().positive(),
+  userId: z.coerce.number().int().positive(),
+})
+
+export const renameHouseholdSchema = z.object({ name: householdNameSchema })
+
+export const updateMemberSchema = z.object({ role: z.enum(HOUSEHOLD_ROLES) })
+
 export const createInviteSchema = z
   .object({
     name: personName,

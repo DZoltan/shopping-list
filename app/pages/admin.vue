@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { HouseholdRole } from '#shared/constants'
 
-useHead({ title: 'Kezelés' })
+useHead({ title: 'Háztartás és meghívás' })
 
 const toast = useToast()
 const { user } = useUserSession()
-const { data: me } = await useMe()
+const { data: me, refresh: refreshMe } = await useMe()
 const { data: invites, refresh: refreshInvites } = await useFetch('/api/invites', { default: () => [] })
 const { data: users, refresh: refreshUsers } = await useFetch('/api/admin/users', {
   default: () => [],
@@ -118,7 +118,20 @@ const formatDate = (value: string) => new Date(value).toLocaleDateString('hu-HU'
 <template>
   <div class="mx-auto max-w-3xl space-y-10">
     <section class="space-y-4">
-      <h1 class="text-xl font-semibold">Meghívás</h1>
+      <h1 class="text-xl font-semibold">Háztartásaim</h1>
+      <p v-if="!me?.households.length" class="text-muted">Nem vagy tagja egy háztartásnak sem.</p>
+      <div v-else class="space-y-4">
+        <HouseholdCard
+          v-for="h in me.households"
+          :key="h.id"
+          :household-id="h.id"
+          @changed="refreshMe(); refreshInvites()"
+        />
+      </div>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-xl font-semibold">Meghívás</h2>
 
       <p v-if="!canInvite" class="text-muted">
         Meghívni a háztartás gazdája tud. Kérd meg őt, ha valakit hozzá szeretnél adni.

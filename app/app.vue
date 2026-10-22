@@ -21,7 +21,7 @@ const menu = computed<DropdownMenuItem[][]>(() => [
   [{ label: user.value?.name ?? '', type: 'label' }],
   [
     { label: 'Profil és eszközök', icon: 'i-lucide-circle-user', to: '/profile' },
-    { label: 'Kezelés és meghívás', icon: 'i-lucide-users', to: '/admin' },
+    { label: 'Háztartás és meghívás', icon: 'i-lucide-users', to: '/admin' },
   ],
   [{ label: 'Kijelentkezés', icon: 'i-lucide-log-out', onSelect: logout }],
 ])
