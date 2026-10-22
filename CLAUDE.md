@@ -33,6 +33,7 @@ Goal: run entirely on free tiers, with no cold starts and no auto-pausing servic
 ## Commands
 - Dev server: `npm run dev` (D1 runs locally via the Wrangler/Miniflare platform proxy; local data is separate from production).
 - Generate migration: `npx drizzle-kit generate`
+  - Renames (column/table) make drizzle-kit prompt interactively, which fails without a TTY. Instead: change the schema, run `npx drizzle-kit generate --custom --name <name>`, write the SQL by hand, and update the new `meta/<n>_snapshot.json` to the renamed state. `npx drizzle-kit generate` must then report no changes.
 - Apply migrations locally: `npx wrangler d1 migrations apply DB --local`
 - Apply migrations to production: `npx wrangler d1 migrations apply DB --remote`
 - Build: `npm run build`
