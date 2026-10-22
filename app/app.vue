@@ -52,6 +52,7 @@ const menu = computed<DropdownMenuItem[][]>(() => [
 
     <UMain>
       <UContainer class="max-w-2xl py-6">
+        <InAppBrowserNotice />
         <NuxtPage />
       </UContainer>
     </UMain>
