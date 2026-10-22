@@ -62,6 +62,9 @@ const menu = computed<DropdownMenuItem[][]>(() => [
             label="Telepítés"
             @click="$pwa.install()"
           />
+          <UTooltip text="Súgó">
+            <UButton to="/help" icon="i-lucide-circle-help" variant="ghost" color="neutral" aria-label="Súgó" />
+          </UTooltip>
           <UColorModeButton />
           <UDropdownMenu v-if="loggedIn" :items="menu">
             <UButton variant="ghost" color="neutral" aria-label="Fiók" class="rounded-full p-1">

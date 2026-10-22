@@ -55,6 +55,8 @@ export default defineNuxtConfig({
       // Pages are rendered on the server, so there is no precached app shell to fall back to
       navigateFallback: null,
       globPatterns: ['**/*.{js,css,png,svg,ico,woff2}'],
+      // Help screenshots are loaded only when someone opens the help page
+      globIgnores: ['**/help-images/**'],
       runtimeCaching: [
         {
           // Pages and API reads: always try the network, fall back to the last copy when offline

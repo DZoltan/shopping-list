@@ -11,7 +11,8 @@
     "typecheck": "nuxt typecheck",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
-    "test:e2e": "node tests/run-e2e.mjs"
+    "test:e2e": "node tests/run-e2e.mjs",
+    "help:screenshots": "node tests/run-e2e.mjs scripts/help-screenshots.mjs"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.147",
@@ -34,6 +35,7 @@
     "@vite-pwa/assets-generator": "^1.0.4",
     "@vite-pwa/nuxt": "^1.1.1",
     "drizzle-kit": "^0.31.11",
+    "sharp": "^0.35.5",
     "typescript": "^6.0.3",
     "vue-tsc": "^3.3.13",
     "wrangler": "^4.152.0"

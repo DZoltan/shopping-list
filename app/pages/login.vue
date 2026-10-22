@@ -58,5 +58,6 @@ async function login() {
     <p class="text-sm text-muted">
       Még nincs fiókod? A belépéshez meghívó link kell valakitől, aki már használja az appot.
     </p>
+    <ULink to="/help" class="text-sm text-primary">Hogyan működik az app?</ULink>
   </div>
 </template>
