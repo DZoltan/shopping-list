@@ -116,7 +116,7 @@ const formatDate = (value: string) => new Date(value).toLocaleDateString('hu-HU'
 </script>
 
 <template>
-  <div class="space-y-10">
+  <div class="mx-auto max-w-3xl space-y-10">
     <section class="space-y-4">
       <h1 class="text-xl font-semibold">Meghívás</h1>
 

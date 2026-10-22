@@ -50,7 +50,7 @@ const formatDate = (value: string | null) =>
 </script>
 
 <template>
-  <div class="space-y-10">
+  <div class="mx-auto max-w-3xl space-y-10">
     <section class="space-y-1">
       <h1 class="text-xl font-semibold">{{ user?.name }}</h1>
       <p class="text-muted">
