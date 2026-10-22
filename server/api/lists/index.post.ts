@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
   const body = await readValidatedBody(event, createListSchema.parse)
   const db = useDb(event)
 
-  const [list] = await db.insert(lists).values(body).returning()
+  const list = await db.insert(lists).values(body).returning().get()
   setResponseStatus(event, 201)
   return list
 })

@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
   const db = useDb(event)
 
   try {
-    const [item] = await db
+    const item = await db
       .insert(items)
       .values({
         ...body,
@@ -17,6 +17,7 @@ export default defineEventHandler(async (event) => {
         position: sql`(select coalesce(max(${items.position}), -1) + 1 from ${items} where ${items.listId} = ${listId})`,
       })
       .returning()
+      .get()
     setResponseStatus(event, 201)
     return item
   } catch (error) {

@@ -28,6 +28,7 @@ Goal: run entirely on free tiers, with no cold starts and no auto-pausing servic
 - Validate all request bodies and query params on the server (e.g. with zod) before they reach the DB.
 - Schema is the single source of truth in `server/db/schema.ts`. Never edit the database by hand; every schema change goes through a generated migration file that is committed.
 - Use `useFetch` / `useAsyncData` for reads and `$fetch` for mutations. Keep shared types between server and client in one place.
+- In Nuxt 4, `useFetch` / `useAsyncData` `data` is a `shallowRef`: mutating nested fields (`data.value.items.push(...)`, `item.done = true`) does not update the UI. Assign a new object instead (`data.value = { ...data.value, items: [...] }`).
 
 ## Commands
 - Dev server: `npm run dev` (D1 runs locally via the Wrangler/Miniflare platform proxy; local data is separate from production).
