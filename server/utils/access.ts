@@ -40,7 +40,7 @@ export function getMyHouseholds(db: Db, userId: number) {
 // Lists the user cannot access are reported as missing, so their existence does not leak
 export async function requireListAccess(db: Db, userId: number, listId: number) {
   const list = await db
-    .select({ id: lists.id })
+    .select({ id: lists.id, householdId: lists.householdId, type: lists.type })
     .from(lists)
     .where(and(eq(lists.id, listId), inArray(lists.householdId, memberHouseholdIds(db, userId))))
     .get()

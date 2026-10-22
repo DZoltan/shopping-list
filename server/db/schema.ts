@@ -2,7 +2,7 @@
 // Change this file, then run `npx drizzle-kit generate` to create a migration.
 import type { WebAuthnCredential } from '#auth-utils'
 import { sql } from 'drizzle-orm'
-import { check, index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { check, index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { HOUSEHOLD_ROLES, LIST_TYPES } from '../../shared/constants'
 
 const createdAt = integer('created_at', { mode: 'timestamp' })
@@ -161,6 +161,30 @@ export const items = sqliteTable(
     ...timestamps,
   },
   (t) => [index('items_list_done_position_idx').on(t.listId, t.done, t.position)],
+)
+
+// What a household tends to add, per list type; feeds autocomplete and the "frequent" chips.
+// Kept apart from items, so deleting a list does not erase the history.
+export const itemSuggestions = sqliteTable(
+  'item_suggestions',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    householdId: integer('household_id')
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
+    type: text('type', { enum: LIST_TYPES }).notNull(),
+    // As last typed (for display) and normalized (for matching, see shared/text.ts)
+    text: text('text').notNull(),
+    normalized: text('normalized').notNull(),
+    lastQuantity: text('last_quantity'),
+    useCount: integer('use_count').notNull().default(1),
+    lastUsedAt: integer('last_used_at', { mode: 'timestamp' }).notNull(),
+    createdAt,
+  },
+  (t) => [
+    uniqueIndex('item_suggestions_household_type_text_idx').on(t.householdId, t.type, t.normalized),
+    check('item_suggestions_type_check', sql`${t.type} in ('shopping', 'todo')`),
+  ],
 )
 
 export type User = typeof users.$inferSelect

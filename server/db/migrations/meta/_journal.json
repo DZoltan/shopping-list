@@ -29,6 +29,13 @@
       "when": 1792695547483,
       "tag": "0003_device_links",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792702887871,
+      "tag": "0004_item_suggestions",
+      "breakpoints": true
     }
   ]
 }

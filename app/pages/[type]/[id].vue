@@ -4,6 +4,7 @@ import { VueDraggable } from 'vue-draggable-plus'
 import type { z } from 'zod'
 import type { ListType } from '#shared/constants'
 import { createItemSchema, updateListSchema } from '#shared/schemas'
+import { normalizeItemText } from '#shared/text'
 
 // A new component per list, so switching lists starts from a clean state
 definePageMeta({ key: (route) => route.fullPath })
@@ -52,18 +53,30 @@ function failed(title: string) {
   refresh()
 }
 
-// --- add item ---
-const showDetails = ref(false)
-const newItem = reactive({ text: '', quantity: '', reason: '' })
+// --- add item, with suggestions from what the household added before ---
+const { data: suggestions, refresh: refreshSuggestions } = await useFetch(`/api/lists/${id}/suggestions`, {
+  default: () => [],
+  server: false,
+})
+const openTexts = computed(() => new Set(openItems.value.map((i) => normalizeItemText(i.text))))
 
-async function addItem(event: FormSubmitEvent<z.output<typeof createItemSchema>>) {
+async function addItem(data: z.output<typeof createItemSchema>) {
   try {
-    const item = await $fetch(`/api/lists/${id}/items`, { method: 'POST', body: event.data })
+    const item = await $fetch(`/api/lists/${id}/items`, { method: 'POST', body: data })
     setItems((items) => [...items, item])
-    Object.assign(newItem, { text: '', quantity: '', reason: '' })
     refreshLists()
+    refreshSuggestions()
   } catch {
     failed('Nem sikerült hozzáadni a tételt')
+  }
+}
+
+async function forgetSuggestion(suggestionId: number) {
+  suggestions.value = suggestions.value.filter((s) => s.id !== suggestionId)
+  try {
+    await $fetch(`/api/suggestions/${suggestionId}`, { method: 'DELETE' })
+  } catch {
+    refreshSuggestions()
   }
 }
 
@@ -191,38 +204,15 @@ async function deleteList() {
       </UDropdownMenu>
     </header>
 
-    <UForm :schema="createItemSchema" :state="newItem" class="space-y-2 border-b border-default bg-elevated/40 px-4 py-3 sm:px-5" @submit="addItem">
-      <div class="flex items-start gap-2">
-        <UFormField name="text" class="flex-1">
-          <UInput
-            v-model="newItem.text"
-            :placeholder="meta.itemPlaceholder"
-            aria-label="Új tétel"
-            class="w-full"
-            size="lg"
-            icon="i-lucide-plus"
-          />
-        </UFormField>
-        <UButton
-          :icon="showDetails ? 'i-lucide-chevron-up' : 'i-lucide-sliders-horizontal'"
-          variant="ghost"
-          color="neutral"
-          size="lg"
-          :aria-label="showDetails ? 'Részletek elrejtése' : 'Részletek'"
-          @click="showDetails = !showDetails"
-        />
-        <UButton type="submit" label="Hozzáadás" size="lg" class="hidden sm:inline-flex" />
-        <UButton type="submit" icon="i-lucide-arrow-up" size="lg" aria-label="Hozzáadás" class="sm:hidden" />
-      </div>
-      <div v-if="showDetails" class="grid gap-2 sm:grid-cols-[12rem_1fr]">
-        <UFormField v-if="list.type === 'shopping'" name="quantity">
-          <UInput v-model="newItem.quantity" placeholder="Mennyiség, pl. 2 kg" class="w-full" />
-        </UFormField>
-        <UFormField name="reason" :class="list.type === 'shopping' ? '' : 'sm:col-span-2'">
-          <UInput v-model="newItem.reason" placeholder="Miért? (opcionális)" class="w-full" />
-        </UFormField>
-      </div>
-    </UForm>
+    <div class="border-b border-default bg-elevated/40 px-4 py-3 sm:px-5">
+      <AddItemForm
+        :type="list.type"
+        :suggestions="suggestions"
+        :on-list="openTexts"
+        @add="addItem"
+        @forget="forgetSuggestion"
+      />
+    </div>
 
     <VueDraggable
       v-if="openItems.length"

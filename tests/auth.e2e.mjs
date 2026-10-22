@@ -157,6 +157,18 @@ const otherList = (await admin.req('POST', '/api/lists', { type: 'todo', name: '
 const otherItem = (await admin.req('POST', `/api/lists/${otherList.id}/items`, { text: 'x' })).data
 await bob.req('PUT', `/api/lists/${list.id}/order`, { itemIds: [second.id, third.id, otherItem.id, item.id] })
 check("reorder ignores another list's items", (await admin.req('GET', `/api/lists/${otherList.id}`)).data.items[0].position, 0)
+const suggestionsOf = async (client, listId) => (await client.req('GET', `/api/lists/${listId}/suggestions`)).data
+check('added items become suggestions', (await suggestionsOf(bob, list.id)).map((s) => s.normalized).sort().join(','), 'kenyér,tej,vaj')
+await bob.req('POST', `/api/lists/${list.id}/items`, { text: '  Tej ', quantity: '1 l' })
+await admin.req('POST', `/api/lists/${list.id}/items`, { text: 'TEJ' })
+const tej = (await suggestionsOf(bob, list.id)).find((s) => s.normalized === 'tej')
+check('same text (any case / spacing) counts up', tej.useCount, 3)
+check('last quantity is kept when none is given', tej.lastQuantity, '1 l')
+check('most used comes first', (await suggestionsOf(bob, list.id))[0].normalized, 'tej')
+check('suggestions are per list type', (await suggestionsOf(bob, otherList.id)).map((s) => s.normalized).join(','), 'x')
+check('forget a suggestion', (await bob.req('DELETE', `/api/suggestions/${tej.id}`)).status, 204)
+check('forgotten suggestion is gone', (await suggestionsOf(bob, list.id)).some((s) => s.normalized === 'tej'), false)
+const vaj = (await suggestionsOf(bob, list.id)).find((s) => s.normalized === 'vaj')
 check('member cannot invite -> 403', (await bob.req('POST', '/api/invites', { name: 'Y', householdId: homeId, role: 'member' })).status, 403)
 
 console.log('# invitee with a new household is isolated')
@@ -169,6 +181,8 @@ check('carol PATCH foreign list -> 404', (await carol.req('PATCH', `/api/lists/$
 check('carol adds item to foreign list -> 404', (await carol.req('POST', `/api/lists/${list.id}/items`, { text: 'x' })).status, 404)
 check('carol PATCH foreign item -> 404', (await carol.req('PATCH', `/api/items/${item.id}`, { done: true })).status, 404)
 check('carol reorders foreign list -> 404', (await carol.req('PUT', `/api/lists/${list.id}/order`, { itemIds: [item.id] })).status, 404)
+check('carol cannot read foreign suggestions -> 404', (await carol.req('GET', `/api/lists/${list.id}/suggestions`)).status, 404)
+check('carol cannot forget foreign suggestions -> 404', (await carol.req('DELETE', `/api/suggestions/${vaj.id}`)).status, 404)
 check('carol DELETE foreign item -> 404', (await carol.req('DELETE', `/api/items/${item.id}`)).status, 404)
 check('carol DELETE foreign list -> 404', (await carol.req('DELETE', `/api/lists/${list.id}`)).status, 404)
 check('carol creates list in foreign household -> 403', (await carol.req('POST', '/api/lists', { type: 'todo', name: 'x', householdId: homeId })).status, 403)
