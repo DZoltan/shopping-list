@@ -2,6 +2,8 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
+  // tests/run-e2e.mjs builds into a temporary directory, so it can run next to your `npm run dev`
+  buildDir: process.env.E2E_BUILD_DIR || undefined,
   modules: ['@nuxt/ui', '@vite-pwa/nuxt', 'nuxt-auth-utils'],
   css: ['~/assets/css/main.css'],
 

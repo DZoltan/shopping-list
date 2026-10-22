@@ -50,3 +50,8 @@ the Cloudflare free tier (Workers + D1).
   - End-to-end tests for auth, household isolation and the API, using a software
     passkey authenticator, run against a throwaway local database (`npm run test:e2e`).
   - Reproducible help screenshots (`npm run help:screenshots`).
+  - GitHub Actions CI: type check, schema/migration drift check, build, e2e tests.
+  - README, MIT license, `.env.example`.
+
+[Unreleased]: https://github.com/DZoltan/shopping-list/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/DZoltan/shopping-list/releases/tag/v0.1.0

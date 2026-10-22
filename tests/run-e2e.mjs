@@ -26,16 +26,17 @@ function run(command, args, options = {}) {
   })
 }
 
+// npx starts a process tree (shell -> npx -> nuxt); stop all of it, not just the shell
 function stop(child) {
-  // npx starts a process tree on Windows; kill all of it
   if (process.platform === 'win32') spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' })
-  else child.kill('SIGTERM')
+  else process.kill(-child.pid, 'SIGTERM') // the whole process group, see `detached` below
 }
 
 async function waitForServer() {
   for (let i = 0; i < 90; i++) {
+    // Ready means the DB answers, not just any JSON (errors are JSON too)
     const ready = await fetch(`${BASE}/api/health`)
-      .then((r) => r.headers.get('content-type')?.includes('json'))
+      .then((r) => r.ok && r.headers.get('content-type')?.includes('json'))
       .catch(() => false)
     if (ready) return
     await new Promise((r) => setTimeout(r, 1000))
@@ -52,7 +53,17 @@ try {
 
   server = shell('npx', ['nuxt', 'dev', '--port', String(PORT)], {
     stdio: 'ignore',
-    env: { ...process.env, CF_PERSIST_DIR: join(stateDir, 'v3'), NUXT_ADMIN_SETUP_TOKEN: SETUP_TOKEN },
+    // On Linux/macOS: own process group, so stop() can end the whole tree
+    detached: process.platform !== 'win32',
+    env: {
+      ...process.env,
+      CF_PERSIST_DIR: join(stateDir, 'v3'),
+      NUXT_ADMIN_SETUP_TOKEN: SETUP_TOKEN,
+      // Own build directory, so a running `npm run dev` is neither blocked nor overwritten.
+      // It must stay inside the project, or the Cloudflare dev emulation loses the D1 binding.
+      E2E_BUILD_DIR: '.nuxt-e2e',
+      NUXT_IGNORE_LOCK: '1',
+    },
   })
   await waitForServer()
 

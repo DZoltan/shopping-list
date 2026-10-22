@@ -48,7 +48,7 @@ Goal: run entirely on free tiers, with no cold starts and no auto-pausing servic
 - Apply migrations to production: `npx wrangler d1 migrations apply DB --remote`
 - Build: `npm run build`
 - Deploy: `npx wrangler deploy` (or the Git-connected Cloudflare build, if configured)
-- E2E test (auth, household isolation, API): `npm run test:e2e`. It starts its own dev server on port 3199 with a throwaway local D1 (`CF_PERSIST_DIR`), so the `npm run dev` data in `.wrangler/state` is never touched. Never clear the developer's local DB for testing. Run it after touching the API, auth or access checks.
+- E2E test (auth, household isolation, API): `npm run test:e2e`. It starts its own dev server on port 3199 with a throwaway local D1 (`CF_PERSIST_DIR`), so the `npm run dev` data in `.wrangler/state` is never touched. It builds into `.nuxt-e2e`, so it can run while `npm run dev` is running. Never clear the developer's local DB for testing. Run it after touching the API, auth or access checks.
 - Help page screenshots (`public/help-images/*.webp`): `npm run help:screenshots` regenerates them with headless Edge/Chrome on a throwaway DB. Rerun after visible UI changes. Do not put files in `public/help/`: a folder with the same name as a page route makes the static server redirect `/help` to `/help/`.
 - Always run the local migration and a type check / build before suggesting a deploy.
 
