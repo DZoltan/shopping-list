@@ -78,6 +78,8 @@ export default defineNuxtConfig({
       // Generate the deploy config from wrangler.jsonc so `wrangler deploy` works from the repo root
       deployConfig: true,
       nodeCompat: true,
+      // Local D1 data for `npm run dev`; tests/run-e2e.mjs points this at a throwaway directory
+      dev: { persistDir: process.env.CF_PERSIST_DIR || undefined },
     },
   },
 })

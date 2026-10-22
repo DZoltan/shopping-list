@@ -87,6 +87,35 @@ async function removeItem(item: ListItem) {
   }
 }
 
+// --- edit item ---
+const editing = ref<ListItem>()
+const editState = reactive({ text: '', quantity: '', reason: '' })
+
+function openEdit(item: ListItem) {
+  Object.assign(editState, { text: item.text, quantity: item.quantity ?? '', reason: item.reason ?? '' })
+  editing.value = item
+}
+
+async function saveEdit(event: FormSubmitEvent<z.output<typeof createItemSchema>>) {
+  const item = editing.value
+  if (!item) return
+  editing.value = undefined
+  // Empty fields arrive as null, which clears them on the server too
+  const changes = { text: event.data.text, quantity: event.data.quantity ?? null, reason: event.data.reason ?? null }
+  setItems((items) => items.map((i) => (i.id === item.id ? { ...i, ...changes } : i)))
+  try {
+    await $fetch(`/api/items/${item.id}`, { method: 'PATCH', body: changes })
+  } catch {
+    failed('Nem sikerült menteni')
+  }
+}
+
+function deleteEditing() {
+  const item = editing.value
+  editing.value = undefined
+  if (item) removeItem(item)
+}
+
 // --- rename / delete list ---
 const renameOpen = ref(false)
 const renameState = reactive({ name: '' })
@@ -187,15 +216,20 @@ async function deleteList() {
           class="mt-0.5"
           @update:model-value="setDone(item, $event === true)"
         />
-        <div class="min-w-0 flex-1">
-          <div class="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          class="min-w-0 flex-1 cursor-pointer text-left"
+          :aria-label="`${item.text} szerkesztése`"
+          @click="openEdit(item)"
+        >
+          <span class="flex flex-wrap items-center gap-2">
             <span class="break-words">{{ item.text }}</span>
             <UBadge v-if="item.quantity" :label="item.quantity" variant="subtle" size="sm" />
-          </div>
-          <p v-if="item.reason || addedByOther(item)" class="text-sm text-muted">
+          </span>
+          <span v-if="item.reason || addedByOther(item)" class="block text-sm text-muted">
             {{ [item.reason, addedByOther(item)].filter(Boolean).join(' · ') }}
-          </p>
-        </div>
+          </span>
+        </button>
         <UButton
           icon="i-lucide-x"
           variant="ghost"
@@ -230,7 +264,14 @@ async function deleteList() {
             size="lg"
             @update:model-value="setDone(item, $event === true)"
           />
-          <span class="min-w-0 flex-1 break-words text-muted line-through">{{ item.text }}</span>
+          <button
+            type="button"
+            class="min-w-0 flex-1 cursor-pointer break-words text-left text-muted line-through"
+            :aria-label="`${item.text} szerkesztése`"
+            @click="openEdit(item)"
+          >
+            {{ item.text }}
+          </button>
           <UButton
             icon="i-lucide-x"
             variant="ghost"
@@ -243,6 +284,33 @@ async function deleteList() {
         </li>
       </ul>
     </section>
+
+    <UModal
+      :open="!!editing"
+      title="Tétel szerkesztése"
+      @update:open="(open) => { if (!open) editing = undefined }"
+    >
+      <template #body>
+        <UForm :schema="createItemSchema" :state="editState" class="space-y-4" @submit="saveEdit">
+          <UFormField label="Tétel" name="text">
+            <UInput v-model="editState.text" class="w-full" autofocus />
+          </UFormField>
+          <UFormField v-if="list.type === 'shopping'" label="Mennyiség" name="quantity">
+            <UInput v-model="editState.quantity" placeholder="pl. 2 kg" class="w-full" />
+          </UFormField>
+          <UFormField label="Miért?" name="reason">
+            <UInput v-model="editState.reason" placeholder="opcionális" class="w-full" />
+          </UFormField>
+          <div class="flex items-center gap-2">
+            <UButton label="Törlés" icon="i-lucide-trash-2" variant="ghost" color="error" @click="deleteEditing" />
+            <div class="ml-auto flex gap-2">
+              <UButton label="Mégse" variant="ghost" color="neutral" @click="editing = undefined" />
+              <UButton type="submit" label="Mentés" />
+            </div>
+          </div>
+        </UForm>
+      </template>
+    </UModal>
 
     <UModal v-model:open="renameOpen" title="Lista átnevezése">
       <template #body>

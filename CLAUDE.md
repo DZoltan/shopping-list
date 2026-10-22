@@ -48,7 +48,7 @@ Goal: run entirely on free tiers, with no cold starts and no auto-pausing servic
 - Apply migrations to production: `npx wrangler d1 migrations apply DB --remote`
 - Build: `npm run build`
 - Deploy: `npx wrangler deploy` (or the Git-connected Cloudflare build, if configured)
-- Auth / isolation e2e test: with an empty local DB (no users) and a running server, `node tests/auth.e2e.mjs [baseUrl] [setupToken]` (defaults: `http://localhost:3123`, the token from `.env`). Run it after touching auth or access checks.
+- E2E test (auth, household isolation, API): `npm run test:e2e`. It starts its own dev server on port 3199 with a throwaway local D1 (`CF_PERSIST_DIR`), so the `npm run dev` data in `.wrangler/state` is never touched. Never clear the developer's local DB for testing. Run it after touching the API, auth or access checks.
 - Always run the local migration and a type check / build before suggesting a deploy.
 
 ## Working agreement

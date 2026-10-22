@@ -1,6 +1,6 @@
 // End-to-end auth and household isolation test, using a software passkey authenticator (ES256, "none" attestation).
-// Needs an empty local DB (no users) and a running server:
-//   node tests/auth.e2e.mjs [baseUrl] [setupToken]
+// Runs against an empty database: use `npm run test:e2e` (tests/run-e2e.mjs), which starts
+// a dev server with its own throwaway local D1, or pass [baseUrl] [setupToken] yourself.
 import { createHash, generateKeyPairSync, randomBytes, sign } from 'node:crypto'
 
 const BASE = process.argv[2] ?? 'http://localhost:3123'
@@ -142,6 +142,11 @@ check('bob sees the shared list', (await bob.req('GET', '/api/lists')).data.leng
 const item = (await bob.req('POST', `/api/lists/${list.id}/items`, { text: 'tej' })).data
 check('item records who added it', item.addedByName, 'Bob')
 check('admin sees bob as author', (await admin.req('GET', `/api/lists/${list.id}`)).data.items[0].addedByName, 'Bob')
+const edited = (await admin.req('PATCH', `/api/items/${item.id}`, { text: 'zsírszegény tej', quantity: '2 l', reason: 'elfogyott' })).data
+check('household member edits an item', `${edited.text}|${edited.quantity}|${edited.reason}`, 'zsírszegény tej|2 l|elfogyott')
+const cleared = (await bob.req('PATCH', `/api/items/${item.id}`, { quantity: null, reason: '' })).data
+check('null and empty string clear optional fields', `${cleared.quantity}|${cleared.reason}|${cleared.text}`, 'null|null|zsírszegény tej')
+check('empty item text is rejected -> 400', (await bob.req('PATCH', `/api/items/${item.id}`, { text: '  ' })).status, 400)
 check('member cannot invite -> 403', (await bob.req('POST', '/api/invites', { name: 'Y', householdId: homeId, role: 'member' })).status, 403)
 
 console.log('# invitee with a new household is isolated')
