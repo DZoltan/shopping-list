@@ -147,6 +147,16 @@ check('household member edits an item', `${edited.text}|${edited.quantity}|${edi
 const cleared = (await bob.req('PATCH', `/api/items/${item.id}`, { quantity: null, reason: '' })).data
 check('null and empty string clear optional fields', `${cleared.quantity}|${cleared.reason}|${cleared.text}`, 'null|null|zsírszegény tej')
 check('empty item text is rejected -> 400', (await bob.req('PATCH', `/api/items/${item.id}`, { text: '  ' })).status, 400)
+const second = (await admin.req('POST', `/api/lists/${list.id}/items`, { text: 'kenyér' })).data
+const third = (await admin.req('POST', `/api/lists/${list.id}/items`, { text: 'vaj' })).data
+check('new items are appended', `${second.position}|${third.position}`, '1|2')
+check('reorder items', (await bob.req('PUT', `/api/lists/${list.id}/order`, { itemIds: [third.id, item.id, second.id] })).status, 204)
+check('new order is returned', (await admin.req('GET', `/api/lists/${list.id}`)).data.items.map((i) => i.text).join(','), 'vaj,zsírszegény tej,kenyér')
+check('duplicate ids in order -> 400', (await bob.req('PUT', `/api/lists/${list.id}/order`, { itemIds: [item.id, item.id] })).status, 400)
+const otherList = (await admin.req('POST', '/api/lists', { type: 'todo', name: 'Másik' })).data
+const otherItem = (await admin.req('POST', `/api/lists/${otherList.id}/items`, { text: 'x' })).data
+await bob.req('PUT', `/api/lists/${list.id}/order`, { itemIds: [second.id, third.id, otherItem.id, item.id] })
+check("reorder ignores another list's items", (await admin.req('GET', `/api/lists/${otherList.id}`)).data.items[0].position, 0)
 check('member cannot invite -> 403', (await bob.req('POST', '/api/invites', { name: 'Y', householdId: homeId, role: 'member' })).status, 403)
 
 console.log('# invitee with a new household is isolated')
@@ -158,6 +168,7 @@ check('carol GET foreign list -> 404', (await carol.req('GET', `/api/lists/${lis
 check('carol PATCH foreign list -> 404', (await carol.req('PATCH', `/api/lists/${list.id}`, { name: 'hacked' })).status, 404)
 check('carol adds item to foreign list -> 404', (await carol.req('POST', `/api/lists/${list.id}/items`, { text: 'x' })).status, 404)
 check('carol PATCH foreign item -> 404', (await carol.req('PATCH', `/api/items/${item.id}`, { done: true })).status, 404)
+check('carol reorders foreign list -> 404', (await carol.req('PUT', `/api/lists/${list.id}/order`, { itemIds: [item.id] })).status, 404)
 check('carol DELETE foreign item -> 404', (await carol.req('DELETE', `/api/items/${item.id}`)).status, 404)
 check('carol DELETE foreign list -> 404', (await carol.req('DELETE', `/api/lists/${list.id}`)).status, 404)
 check('carol creates list in foreign household -> 403', (await carol.req('POST', '/api/lists', { type: 'todo', name: 'x', householdId: homeId })).status, 403)

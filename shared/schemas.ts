@@ -47,6 +47,15 @@ export const updateItemSchema = z
   .partial()
   .refine((v) => Object.keys(v).length > 0, { message: 'At least one field is required' })
 
+// New order of a list's open items, first to last
+export const reorderItemsSchema = z.object({
+  itemIds: z
+    .array(z.number().int().positive())
+    .min(1)
+    .max(500)
+    .refine((ids) => new Set(ids).size === ids.length, { message: 'Duplicate item ids' }),
+})
+
 // --- auth ---
 
 const personName = z.string().trim().min(1).max(50)

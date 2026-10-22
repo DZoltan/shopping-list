@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DropdownMenuItem, FormSubmitEvent } from '@nuxt/ui'
+import { VueDraggable } from 'vue-draggable-plus'
 import type { z } from 'zod'
 import type { ListType } from '#shared/constants'
 import { createItemSchema, updateListSchema } from '#shared/schemas'
@@ -84,6 +85,22 @@ async function removeItem(item: ListItem) {
     refreshLists()
   } catch {
     failed('Nem sikerült törölni a tételt')
+  }
+}
+
+// --- reorder open items by dragging ---
+// VueDraggable needs a writable array; it mirrors openItems and is reordered in place while dragging
+const sortableItems = ref<ListItem[]>([])
+watch(openItems, (items) => { sortableItems.value = [...items] }, { immediate: true })
+
+async function saveOrder() {
+  const itemIds = sortableItems.value.map((i) => i.id)
+  const positions = new Map(itemIds.map((itemId, position) => [itemId, position]))
+  setItems((items) => items.map((i) => (positions.has(i.id) ? { ...i, position: positions.get(i.id)! } : i)))
+  try {
+    await $fetch(`/api/lists/${id}/order`, { method: 'PUT', body: { itemIds } })
+  } catch {
+    failed('Nem sikerült menteni a sorrendet')
   }
 }
 
@@ -207,13 +224,28 @@ async function deleteList() {
       </div>
     </UForm>
 
-    <ul v-if="openItems.length" class="divide-y divide-default">
-      <li v-for="item in openItems" :key="item.id" class="group flex items-start gap-3 px-4 py-3 hover:bg-elevated/40 sm:px-5">
+    <VueDraggable
+      v-if="openItems.length"
+      v-model="sortableItems"
+      tag="ul"
+      handle=".drag-handle"
+      :animation="150"
+      ghost-class="opacity-40"
+      class="divide-y divide-default"
+      @update="saveOrder"
+    >
+      <li v-for="item in sortableItems" :key="item.id" class="group flex items-start gap-1 py-3 pr-4 pl-1 hover:bg-elevated/40 sm:gap-2 sm:pr-5 sm:pl-2">
+        <span
+          class="drag-handle -my-1 flex cursor-grab touch-none items-center self-stretch px-1 text-dimmed hover:text-muted active:cursor-grabbing"
+          aria-hidden="true"
+        >
+          <UIcon name="i-lucide-grip-vertical" class="size-5" />
+        </span>
         <UCheckbox
           :model-value="item.done"
           :aria-label="item.text"
           size="lg"
-          class="mt-0.5"
+          class="mt-0.5 mr-2"
           @update:model-value="setDone(item, $event === true)"
         />
         <button
@@ -240,7 +272,7 @@ async function deleteList() {
           @click="removeItem(item)"
         />
       </li>
-    </ul>
+    </VueDraggable>
     <div v-else class="flex flex-col items-center gap-2 px-4 py-12 text-center text-muted">
       <UIcon :name="doneItems.length ? 'i-lucide-party-popper' : meta.icon" class="size-10" />
       <p>{{ doneItems.length ? 'Minden kész!' : 'A lista még üres. Írd be fent az első tételt.' }}</p>
