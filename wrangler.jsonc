@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "shopping-list",
+  "compatibility_date": "2025-07-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "shopping_list",
+      "database_id": "8045b3e3-30a8-4d8b-a77c-5f6b25cfc216",
+      // drizzle-kit writes migrations here; wrangler applies them from the same folder
+      "migrations_dir": "server/db/migrations"
+    }
+  ]
+}

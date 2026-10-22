@@ -1,0 +1,35 @@
+{
+  "name": "shopping-list",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxt typecheck",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.4",
+    "nuxt": "^4.6.2",
+    "vue": "^3.5.44",
+    "vue-router": "^5.4.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261022.1",
+    "drizzle-kit": "^0.31.11",
+    "typescript": "^6.0.3",
+    "vue-tsc": "^3.3.13",
+    "wrangler": "^4.152.0"
+  },
+  "allowScripts": {
+    "esbuild@0.18.20": true,
+    "esbuild@0.25.12": true,
+    "esbuild@0.28.2": true,
+    "workerd@1.20261019.1": true
+  }
+}
