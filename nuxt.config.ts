@@ -2,8 +2,21 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  modules: ['@nuxt/ui', '@vite-pwa/nuxt'],
+  modules: ['@nuxt/ui', '@vite-pwa/nuxt', 'nuxt-auth-utils'],
   css: ['~/assets/css/main.css'],
+
+  auth: {
+    webAuthn: true,
+  },
+
+  runtimeConfig: {
+    // Set in production with `wrangler secret put NUXT_SESSION_PASSWORD` (min. 32 chars)
+    session: {
+      maxAge: 60 * 60 * 24 * 180,
+    },
+    // One-time token for creating the first admin at /setup (`wrangler secret put NUXT_ADMIN_SETUP_TOKEN`)
+    adminSetupToken: '',
+  },
 
   app: {
     head: {

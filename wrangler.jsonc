@@ -2,7 +2,8 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "shopping-list",
   "compatibility_date": "2025-07-15",
-  "compatibility_flags": ["nodejs_compat"],
+  // nodejs_compat_populate_process_env: expose vars and secrets on process.env, where Nuxt's runtimeConfig reads NUXT_* overrides
+  "compatibility_flags": ["nodejs_compat", "nodejs_compat_populate_process_env"],
   "workers_dev": true,
   // Per-version preview URLs are separate hostnames that Cloudflare Access on workers.dev would not cover
   "preview_urls": false,

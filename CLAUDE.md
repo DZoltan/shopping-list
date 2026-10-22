@@ -30,6 +30,15 @@ Goal: run entirely on free tiers, with no cold starts and no auto-pausing servic
 - Use `useFetch` / `useAsyncData` for reads and `$fetch` for mutations. Keep shared types between server and client in one place.
 - In Nuxt 4, `useFetch` / `useAsyncData` `data` is a `shallowRef`: mutating nested fields (`data.value.items.push(...)`, `item.done = true`) does not update the UI. Assign a new object instead (`data.value = { ...data.value, items: [...] }`).
 
+## Auth
+- Passkeys (WebAuthn) via `nuxt-auth-utils`, sealed session cookie. No passwords (hashing would not fit the Workers Free CPU limit), no e-mail.
+- New users only via invite links (created on `/admin`); the first admin via `/setup` with the `NUXT_ADMIN_SETUP_TOKEN` secret. Admins can invite anywhere, including into a new household; household owners only into their own.
+- Every route calls `requireUser(event)`; `server/middleware/auth.ts` is a second line of defence for `/api/*`.
+- **Every list/item query must be scoped to the user's households** via `server/utils/access.ts` (`memberHouseholdIds`, `accessibleListIds`, `requireListAccess`). Inaccessible rows answer 404, not 403.
+- WebAuthn challenges are stored in `auth_challenges` and consumed once; never let the handlers run without `storeChallenge`/`getChallenge`.
+- Passkeys are bound to the hostname. Moving to another domain means everyone registers a new passkey via a new invite.
+- Secrets: `NUXT_SESSION_PASSWORD` (32+ chars) and `NUXT_ADMIN_SETUP_TOKEN`, set with `wrangler secret put`. Locally: `.env` for `npm run dev`, `.dev.vars` for `wrangler dev` (both gitignored).
+
 ## Commands
 - Dev server: `npm run dev` (D1 runs locally via the Wrangler/Miniflare platform proxy; local data is separate from production).
 - Generate migration: `npx drizzle-kit generate`
@@ -38,11 +47,12 @@ Goal: run entirely on free tiers, with no cold starts and no auto-pausing servic
 - Apply migrations to production: `npx wrangler d1 migrations apply DB --remote`
 - Build: `npm run build`
 - Deploy: `npx wrangler deploy` (or the Git-connected Cloudflare build, if configured)
+- Auth / isolation e2e test: with an empty local DB (no users) and a running server, `node tests/auth.e2e.mjs [baseUrl] [setupToken]` (defaults: `http://localhost:3123`, the token from `.env`). Run it after touching auth or access checks.
 - Always run the local migration and a type check / build before suggesting a deploy.
 
 ## Working agreement
 - Never run `--remote` migrations or deploys without asking me first.
 - Do not delete or recreate tables that contain data; write a proper migration instead.
-- No authentication is decided yet. Ask me before adding any auth approach.
+- Ask me before changing the auth approach (see Auth above).
 - Prefer small, reviewable changes. Explain non-obvious Nuxt/Vue concepts in a sentence or two: I am an experienced backend developer (Java, Python) but new to Nuxt/Vue and Node.
 - Communicate with me in Hungarian. Write code, comments, commit messages and this file in English.

@@ -25,3 +25,4 @@ logs
 
 # Wrangler local state and generated files
 .wrangler
+.dev.vars*

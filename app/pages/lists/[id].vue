@@ -141,7 +141,9 @@ async function deleteList() {
             <span class="break-words">{{ item.text }}</span>
             <UBadge v-if="item.quantity" :label="item.quantity" variant="subtle" size="sm" />
           </div>
-          <p v-if="item.reason" class="text-sm text-muted">{{ item.reason }}</p>
+          <p v-if="item.reason || item.addedByName" class="text-sm text-muted">
+            {{ [item.reason, item.addedByName].filter(Boolean).join(' · ') }}
+          </p>
         </div>
         <UButton icon="i-lucide-x" variant="ghost" color="neutral" size="xs" aria-label="Tétel törlése" @click="removeItem(item)" />
       </li>
