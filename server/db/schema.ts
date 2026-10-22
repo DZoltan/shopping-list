@@ -20,12 +20,12 @@ export const lists = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     type: text('type', { enum: LIST_TYPES }).notNull(),
     name: text('name').notNull(),
-    // No families table yet; becomes a foreign key once families exist
-    familyId: integer('family_id'),
+    // No households table yet; becomes a foreign key once households exist
+    householdId: integer('household_id'),
     ...timestamps,
   },
   (t) => [
-    index('lists_family_type_idx').on(t.familyId, t.type),
+    index('lists_household_type_idx').on(t.householdId, t.type),
     check('lists_type_check', sql`${t.type} in ('shopping', 'todo')`),
   ],
 )
