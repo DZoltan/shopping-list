@@ -2,8 +2,7 @@
 // Change this file, then run `npx drizzle-kit generate` to create a migration.
 import { sql } from 'drizzle-orm'
 import { check, index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-
-export const LIST_TYPES = ['shopping', 'todo'] as const
+import { LIST_TYPES } from '../../shared/constants'
 
 const timestamps = {
   createdAt: integer('created_at', { mode: 'timestamp' })
