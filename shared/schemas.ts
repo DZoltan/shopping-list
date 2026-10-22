@@ -80,6 +80,17 @@ export const createInviteSchema = z
     path: ['role'],
   })
 
+export const createDeviceLinkSchema = z.object({
+  // Omitted: a link for yourself. Set (admin only): a recovery link for another user
+  userId: z.number().int().positive().optional(),
+})
+
+export const redeemDeviceLinkSchema = z.object({ token })
+
+export const credentialParamsSchema = z.object({
+  id: z.string().min(1).max(1024),
+})
+
 export type CreateListInput = z.input<typeof createListSchema>
 export type UpdateListInput = z.input<typeof updateListSchema>
 export type CreateItemInput = z.input<typeof createItemSchema>

@@ -86,6 +86,18 @@ async function revoke(id: number) {
   }
 }
 
+// Recovery: a login link for someone who lost all their devices
+const recovery = ref<{ name: string, url: string, expiresAt: string }>()
+
+async function createRecoveryLink(target: { id: number, name: string }) {
+  try {
+    const link = await $fetch('/api/device-links', { method: 'POST', body: { userId: target.id } })
+    recovery.value = { name: target.name, ...link }
+  } catch {
+    toast.add({ title: 'Nem sikerült linket készíteni', color: 'error' })
+  }
+}
+
 const userToDelete = ref<{ id: number, name: string }>()
 
 async function deleteUser() {
@@ -174,6 +186,15 @@ const formatDate = (value: string) => new Date(value).toLocaleDateString('hu-HU'
           </div>
           <UButton
             v-if="u.id !== user.id"
+            icon="i-lucide-key-round"
+            variant="ghost"
+            color="neutral"
+            size="sm"
+            label="Belépési link"
+            @click="createRecoveryLink(u)"
+          />
+          <UButton
+            v-if="u.id !== user.id"
             icon="i-lucide-trash-2"
             variant="ghost"
             color="error"
@@ -184,6 +205,22 @@ const formatDate = (value: string) => new Date(value).toLocaleDateString('hu-HU'
         </li>
       </ul>
     </section>
+
+    <UModal
+      :open="!!recovery"
+      :title="`Belépési link: ${recovery?.name}`"
+      description="Ha valaki minden eszközét elvesztette: a linkkel belép, és új passkey-t hozhat létre."
+      @update:open="(open) => { if (!open) recovery = undefined }"
+    >
+      <template #body>
+        <LoginLinkCard
+          v-if="recovery"
+          :url="recovery.url"
+          :expires-at="recovery.expiresAt"
+          hint="Küldd el neki. Aki megnyitja, az ő nevében lép be, ezért csak neki add oda."
+        />
+      </template>
+    </UModal>
 
     <UModal
       :open="!!userToDelete"

@@ -171,6 +171,41 @@ check('new session is bob', (await fresh.req('GET', '/api/me')).data.name, 'Bob'
 check('replayed login response is rejected', (await new Client('replay').req('POST', '/api/webauthn/authenticate', loginBody)).status, 400)
 check('unknown passkey -> 401', (await new Client('x').login(new Authenticator())).res.status, 401)
 
+console.log('# device links')
+const tokenOf = (url) => url.split('/device/')[1]
+const bobLink = (await bob.req('POST', '/api/device-links', {})).data
+check('bob creates a link for himself', typeof bobLink.url, 'string')
+check('link lives about 10 minutes', Math.abs(new Date(bobLink.expiresAt) - Date.now() - 10 * 60e3) < 60e3, true)
+check('lookup shows whose link it is', (await anon.req('GET', `/api/device-links/lookup?token=${tokenOf(bobLink.url)}`)).data.name, 'Bob')
+check('lookup does not use the link up', (await anon.req('GET', `/api/device-links/lookup?token=${tokenOf(bobLink.url)}`)).status, 200)
+const laptop = new Client('bob-laptop')
+check('redeem on another device', (await laptop.req('POST', '/api/device-links/redeem', { token: tokenOf(bobLink.url) })).status, 200)
+check('other device is logged in as bob', (await laptop.req('GET', '/api/me')).data.name, 'Bob')
+check('link works only once', (await new Client('x').req('POST', '/api/device-links/redeem', { token: tokenOf(bobLink.url) })).status, 400)
+check('used link lookup -> 404', (await anon.req('GET', `/api/device-links/lookup?token=${tokenOf(bobLink.url)}`)).status, 404)
+const older = (await bob.req('POST', '/api/device-links', {})).data
+await bob.req('POST', '/api/device-links', {})
+check('a new link invalidates the previous one', (await new Client('x').req('POST', '/api/device-links/redeem', { token: tokenOf(older.url) })).status, 400)
+check('non-admin cannot create a link for someone else -> 403', (await bob.req('POST', '/api/device-links', { userId: adminMe.id })).status, 403)
+check('creating a link needs a session -> 401', (await anon.req('POST', '/api/device-links', {})).status, 401)
+const recoveryLink = (await admin.req('POST', '/api/device-links', { userId: (await bob.req('GET', '/api/me')).data.id })).data
+check('admin recovery link lives about 24 hours', Math.abs(new Date(recoveryLink.expiresAt) - Date.now() - 24 * 3600e3) < 60e3, true)
+const recovered = new Client('bob-recovered')
+check('recovery link logs in as bob', (await recovered.req('POST', '/api/device-links/redeem', { token: tokenOf(recoveryLink.url) })).data.name, 'Bob')
+
+console.log('# passkey management')
+check('bob has one passkey', (await bob.req('GET', '/api/me/passkeys')).data.length, 1)
+const bobPasskeyId = (await bob.req('GET', '/api/me/passkeys')).data[0].id
+check('last passkey cannot be deleted -> 400', (await bob.req('DELETE', `/api/me/passkeys/${bobPasskeyId}`)).status, 400)
+const bobLaptopKey = new Authenticator()
+check('logged-in bob adds a passkey on the laptop', (await laptop.registerPasskey(bobLaptopKey, { userName: 'Bob' })).status, 200)
+check('bob now has two passkeys', (await bob.req('GET', '/api/me/passkeys')).data.length, 2)
+check('the laptop passkey logs in as bob', (await (async () => { const c = new Client('x'); await c.login(bobLaptopKey); return (await c.req('GET', '/api/me')).data.name })()), 'Bob')
+await admin.registerPasskey(new Authenticator(), { userName: 'Admin' })
+check("admin cannot delete bob's passkey -> 404", (await admin.req('DELETE', `/api/me/passkeys/${bobPasskeyId}`)).status, 404)
+check('bob deletes his first passkey', (await bob.req('DELETE', `/api/me/passkeys/${bobPasskeyId}`)).status, 204)
+check('deleted passkey cannot log in', (await new Client('x').login(bobKey)).res.status, 401)
+
 console.log('# admin')
 const usersList = (await admin.req('GET', '/api/admin/users')).data
 check('admin lists 3 users', usersList.length, 3)

@@ -5,6 +5,8 @@ const PUBLIC_API_PREFIXES = [
   '/api/webauthn/', // passkey register / login; registration checks its own invite or setup token
   '/api/auth/setup-status',
   '/api/invites/lookup',
+  '/api/device-links/lookup',
+  '/api/device-links/redeem',
   '/api/health',
 ]
 

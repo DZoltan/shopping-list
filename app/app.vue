@@ -2,19 +2,7 @@
 import type { DropdownMenuItem } from '@nuxt/ui'
 import { hu } from '@nuxt/ui/locale'
 
-const toast = useToast()
 const { loggedIn, user, clear } = useUserSession()
-const { register } = useWebAuthn()
-
-async function addPasskey() {
-  if (!user.value) return
-  try {
-    await register({ userName: user.value.name, displayName: user.value.name })
-    toast.add({ title: 'Passkey hozzáadva ehhez az eszközhöz', color: 'success' })
-  } catch (e) {
-    toast.add({ title: passkeyErrorMessage(e), color: 'error' })
-  }
-}
 
 async function logout() {
   await clear()
@@ -27,8 +15,8 @@ async function logout() {
 const menu = computed<DropdownMenuItem[][]>(() => [
   [{ label: user.value?.name ?? '', type: 'label' }],
   [
+    { label: 'Profil és eszközök', icon: 'i-lucide-circle-user', to: '/profile' },
     { label: 'Kezelés és meghívás', icon: 'i-lucide-users', to: '/admin' },
-    { label: 'Passkey hozzáadása ehhez az eszközhöz', icon: 'i-lucide-fingerprint', onSelect: addPasskey },
   ],
   [{ label: 'Kijelentkezés', icon: 'i-lucide-log-out', onSelect: logout }],
 ])

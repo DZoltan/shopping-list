@@ -106,6 +106,26 @@ export const invites = sqliteTable(
   ],
 )
 
+// Short-lived, single-use links that log an existing user in on another device
+// (shown as a QR code on the profile page, or created by an admin for account recovery)
+export const deviceLinks = sqliteTable(
+  'device_links',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    tokenHash: text('token_hash').notNull().unique(),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdBy: integer('created_by')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+    usedAt: integer('used_at', { mode: 'timestamp' }),
+    createdAt,
+  },
+  (t) => [index('device_links_user_idx').on(t.userId)],
+)
+
 // --- lists ---
 
 export const lists = sqliteTable(

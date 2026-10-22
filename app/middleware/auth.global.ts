@@ -1,5 +1,6 @@
 // Client-side page guard; the API enforces access on its own (server/middleware/auth.ts)
-const isPublic = (path: string) => path === '/login' || path === '/setup' || path.startsWith('/invite/')
+const isPublic = (path: string) =>
+  path === '/login' || path === '/setup' || path.startsWith('/invite/') || path.startsWith('/device/')
 
 export default defineNuxtRouteMiddleware((to) => {
   const { loggedIn } = useUserSession()

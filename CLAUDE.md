@@ -36,6 +36,7 @@ Goal: run entirely on free tiers, with no cold starts and no auto-pausing servic
 - Every route calls `requireUser(event)`; `server/middleware/auth.ts` is a second line of defence for `/api/*`.
 - **Every list/item query must be scoped to the user's households** via `server/utils/access.ts` (`memberHouseholdIds`, `accessibleListIds`, `requireListAccess`). Inaccessible rows answer 404, not 403.
 - WebAuthn challenges are stored in `auth_challenges` and consumed once; never let the handlers run without `storeChallenge`/`getChallenge`.
+- Other devices: `/profile` creates a one-time device link (QR + URL, 10 min); admins create 24 h recovery links for others on `/admin`. Opening `/device/<token>` only looks the link up; logging in needs a POST from a button, because chat apps open links for previews.
 - Passkeys are bound to the hostname. Moving to another domain means everyone registers a new passkey via a new invite.
 - Secrets: `NUXT_SESSION_PASSWORD` (32+ chars) and `NUXT_ADMIN_SETUP_TOKEN`, set with `wrangler secret put`. Locally: `.env` for `npm run dev`, `.dev.vars` for `wrangler dev` (both gitignored).
 
