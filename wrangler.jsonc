@@ -3,6 +3,9 @@
   "name": "shopping-list",
   "compatibility_date": "2025-07-15",
   "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  // Per-version preview URLs are separate hostnames that Cloudflare Access on workers.dev would not cover
+  "preview_urls": false,
   "d1_databases": [
     {
       "binding": "DB",

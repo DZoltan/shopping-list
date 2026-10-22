@@ -24,6 +24,8 @@ export default defineNuxtConfig({
 
   pwa: {
     registerType: 'autoUpdate',
+    // Browsers fetch the manifest without cookies by default, which Cloudflare Access would block
+    useCredentials: true,
     manifest: {
       name: 'Listák',
       short_name: 'Listák',
