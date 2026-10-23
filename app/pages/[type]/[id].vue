@@ -153,7 +153,6 @@ const confirmDelete = ref(false)
 
 const listMenu = computed<DropdownMenuItem[][]>(() => [
   [
-    { label: 'Frissítés', icon: 'i-lucide-refresh-cw', onSelect: () => refresh() },
     {
       label: 'Átnevezés',
       icon: 'i-lucide-pencil',

@@ -11,6 +11,18 @@ async function logout() {
   await navigateTo('/login')
 }
 
+// Refetches every useFetch / useAsyncData on the current page (tiles, items, suggestions):
+// the manual counterpart of useRefreshOnFocus, for when the app stays open
+const refreshing = ref(false)
+async function refreshAll() {
+  refreshing.value = true
+  try {
+    await refreshNuxtData()
+  } finally {
+    refreshing.value = false
+  }
+}
+
 const route = useRoute()
 const tabs = LIST_TYPES.map((type) => ({ type, to: `/${type}`, ...LIST_TYPE_META[type] }))
 const isActive = (to: string) => route.path === to || route.path.startsWith(`${to}/`)
@@ -60,6 +72,16 @@ const menu = computed<DropdownMenuItem[][]>(() => [
             label="Telepítés"
             @click="$pwa.install()"
           />
+          <UTooltip v-if="loggedIn" text="Frissítés">
+            <UButton
+              icon="i-lucide-refresh-cw"
+              variant="ghost"
+              color="neutral"
+              aria-label="Frissítés"
+              :loading="refreshing"
+              @click="refreshAll"
+            />
+          </UTooltip>
           <UTooltip text="Súgó">
             <UButton to="/help" icon="i-lucide-circle-help" variant="ghost" color="neutral" aria-label="Súgó" />
           </UTooltip>

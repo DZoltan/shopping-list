@@ -29,7 +29,7 @@ const faq = [
   },
   {
     q: 'Miért nem látom azonnal, amit a párom felírt?',
-    a: 'Az app akkor frissít, amikor visszatérsz az ablakra vagy az appra. Ha végig nyitva van, a lista menüjében (⋮) a „Frissítés” azonnal lehozza a változásokat.',
+    a: 'Az app akkor frissít, amikor visszatérsz az ablakra vagy az appra. Ha végig nyitva van, a fejlécben a frissítés gomb (körbeforgó nyilak) azonnal lehozza a változásokat.',
   },
   {
     q: 'Egy rossz javaslat (elírás) mindig felbukkan.',
