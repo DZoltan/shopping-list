@@ -1,5 +1,6 @@
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { idParamsSchema } from '#shared/schemas'
+import { normalizeItemText } from '#shared/text'
 import { itemSuggestions } from '../../../db/schema'
 
 const LIMIT = 200
@@ -16,11 +17,10 @@ export default defineEventHandler(async (event) => {
   // "Frecency": use count divided by (1 + months since last use), so an item unused
   // for a month counts half, for two months a third, and so on
   const score = sql<number>`${itemSuggestions.useCount} * 1.0 / (1 + (unixepoch() - ${itemSuggestions.lastUsedAt}) / ${sql.raw(`${MONTH_SECONDS}.0`)})`
-  return db
+  const rows = await db
     .select({
       id: itemSuggestions.id,
       text: itemSuggestions.text,
-      normalized: itemSuggestions.normalized,
       lastQuantity: itemSuggestions.lastQuantity,
       useCount: itemSuggestions.useCount,
     })
@@ -28,4 +28,6 @@ export default defineEventHandler(async (event) => {
     .where(and(eq(itemSuggestions.householdId, list.householdId), eq(itemSuggestions.type, list.type)))
     .orderBy(desc(score), desc(itemSuggestions.lastUsedAt))
     .limit(LIMIT)
+  // The stored key is a blind index (server/db/encryption.ts), so the client gets it from the text
+  return rows.map((row) => ({ ...row, normalized: normalizeItemText(row.text) }))
 })

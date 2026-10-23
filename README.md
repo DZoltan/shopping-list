@@ -88,7 +88,7 @@ Requirements: Node.js 24, npm.
 
 ```bash
 npm install
-cp .env.example .env        # set NUXT_ADMIN_SETUP_TOKEN
+cp .env.example .env        # set NUXT_ADMIN_SETUP_TOKEN and NUXT_DATA_KEY
 npx wrangler d1 migrations apply DB --local
 npm run dev
 ```
@@ -106,6 +106,7 @@ npx wrangler login
 npx wrangler d1 create shopping_list     # put the database_id into wrangler.jsonc
 npx wrangler secret put NUXT_SESSION_PASSWORD   # 32+ random characters
 npx wrangler secret put NUXT_ADMIN_SETUP_TOKEN
+npx wrangler secret put NUXT_DATA_KEY           # 32+ random characters; keep a copy, see below
 npx wrangler d1 migrations apply DB --remote
 npm run build
 npx wrangler deploy
@@ -113,6 +114,12 @@ npx wrangler deploy
 
 Then open `/setup` on your `*.workers.dev` URL. Passkeys are bound to the hostname, so
 pick the final domain before people register.
+
+`NUXT_DATA_KEY` encrypts user and household names, list names and item texts in D1
+(XChaCha20-Poly1305; suggestions are matched by an HMAC). Anyone with database access but
+without the key sees no readable text. Store the key in a password manager: without it
+that data cannot be recovered. Data written before encryption existed is converted with
+the *Régi adatok titkosítása* button on the admin page.
 
 ## Tests
 

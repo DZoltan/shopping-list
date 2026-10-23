@@ -1,6 +1,7 @@
 // End-to-end auth and household isolation test, using a software passkey authenticator (ES256, "none" attestation).
 // Runs against an empty database: use `npm run test:e2e` (tests/run-e2e.mjs), which starts
 // a dev server with its own throwaway local D1, or pass [baseUrl] [setupToken] yourself.
+import { execSync } from 'node:child_process'
 import { createPasskeyKit } from './lib/passkey.mjs'
 
 const BASE = process.argv[2] ?? 'http://localhost:3123'
@@ -190,6 +191,52 @@ check('the other device is logged out', (await phone.req('GET', '/api/lists')).s
 await new Client('x').login(bobLaptopKey)
 phone.cookie = phoneCookie // the 401 cleared it; send the revoked cookie itself again
 check('the revoked cookie stays out after a new login elsewhere', (await phone.req('GET', '/api/me')).status, 401)
+
+// Reads the database directly; only possible when started by tests/run-e2e.mjs
+const STATE_DIR = process.env.E2E_STATE_DIR
+const dbQuery = (sqlText) => JSON.parse(execSync(
+  `npx wrangler d1 execute DB --local --persist-to "${STATE_DIR}" --json --command "${sqlText}"`,
+  { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+))[0].results
+const countWhere = (table, condition) => dbQuery(`select count(*) as n from ${table} where ${condition}`)[0].n
+
+if (STATE_DIR) {
+  console.log('# encryption at rest')
+  check('user names are stored encrypted', countWhere('users', "substr(name, 1, 3) <> 'v1:'"), 0)
+  check('household names are stored encrypted', countWhere('households', "substr(name, 1, 3) <> 'v1:'"), 0)
+  check('invite names are stored encrypted', countWhere('invites', "substr(name, 1, 3) <> 'v1:'"), 0)
+  check('list names are stored encrypted', countWhere('lists', "substr(name, 1, 3) <> 'v1:'"), 0)
+  check('item texts are stored encrypted', countWhere('items', "substr(text, 1, 3) <> 'v1:' or substr(quantity, 1, 3) <> 'v1:' or substr(reason, 1, 3) <> 'v1:'"), 0)
+  check('suggestions are stored encrypted', countWhere('item_suggestions', "substr(text, 1, 3) <> 'v1:' or substr(normalized, 1, 3) <> 'h1:'"), 0)
+  check('no readable item text in the database', countWhere('items', "text like '%kenyér%' or text like '%tej%'"), 0)
+  check('item read back through the API', (await admin.req('GET', `/api/lists/${list.id}`)).data.items.some((i) => i.text === 'kenyér'), true)
+
+  // Rows as they were stored before encryption existed
+  const kenyerBefore = (await suggestionsOf(admin, list.id)).find((s) => s.normalized === 'kenyér').useCount
+  dbQuery(`insert into lists (type, name, household_id) values ('shopping', 'Régi lista', ${homeId});`
+    + ` insert into items (list_id, text, quantity, position) values ((select max(id) from lists), 'régi tej', '1 l', 0);`
+    + ` insert into item_suggestions (household_id, type, text, normalized, use_count, last_used_at) values`
+    + ` (${homeId}, 'shopping', 'Kenyér', 'kenyér', 5, unixepoch()), (${homeId}, 'shopping', 'Régi sajt', 'régi sajt', 1, unixepoch());`
+    + ` update users set name = 'Admin' where id = ${adminMe.id}`)
+  const oldList = (await admin.req('GET', '/api/lists?type=shopping')).data.find((l) => l.name === 'Régi lista')
+  check('unencrypted old rows are still readable', oldList?.name, 'Régi lista')
+  check('... including their items', (await admin.req('GET', `/api/lists/${oldList.id}`)).data.items[0]?.quantity, '1 l')
+  check('converting needs a session -> 401', (await anon.req('POST', '/api/admin/encrypt-existing')).status, 401)
+  check('non-admin cannot convert old rows -> 403', (await bob.req('POST', '/api/admin/encrypt-existing')).status, 403)
+  let calls = 0
+  while (calls < 50 && !(await admin.req('POST', '/api/admin/encrypt-existing')).data.done) calls++
+  check('conversion finishes', calls < 50, true)
+  check('no plaintext left in lists', countWhere('lists', "substr(name, 1, 3) <> 'v1:'"), 0)
+  check('no plaintext left in items', countWhere('items', "substr(text, 1, 3) <> 'v1:' or substr(quantity, 1, 3) <> 'v1:'"), 0)
+  check('no plaintext left in users', countWhere('users', "substr(name, 1, 3) <> 'v1:'"), 0)
+  check('no plain keys left in suggestions', countWhere('item_suggestions', "substr(normalized, 1, 3) <> 'h1:' or substr(text, 1, 3) <> 'v1:'"), 0)
+  check('converted list reads the same', (await admin.req('GET', `/api/lists/${oldList.id}`)).data.items[0]?.text, 'régi tej')
+  check('converted user name reads the same', (await admin.req('GET', '/api/me')).data.name, 'Admin')
+  const afterSuggestions = await suggestionsOf(admin, list.id)
+  check('old duplicate suggestion is merged into the new one', afterSuggestions.filter((s) => s.normalized === 'kenyér').map((s) => s.useCount).join(','), String(kenyerBefore + 5))
+  check('old suggestion without a twin is kept', afterSuggestions.some((s) => s.text === 'Régi sajt'), true)
+  check('conversion is idempotent', (await admin.req('POST', '/api/admin/encrypt-existing')).data.done, true)
+}
 
 console.log('# admin')
 const usersList = (await admin.req('GET', '/api/admin/users')).data

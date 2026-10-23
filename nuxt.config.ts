@@ -18,6 +18,9 @@ export default defineNuxtConfig({
     },
     // One-time token for creating the first admin at /setup (`wrangler secret put NUXT_ADMIN_SETUP_TOKEN`)
     adminSetupToken: '',
+    // Encrypts names and list/item texts in D1 (`wrangler secret put NUXT_DATA_KEY`, 32+ chars).
+    // Losing it makes that data unreadable: keep a copy in a password manager.
+    dataKey: '',
   },
 
   app: {

@@ -38,7 +38,8 @@ Goal: run entirely on free tiers, with no cold starts and no auto-pausing servic
 - WebAuthn challenges are stored in `auth_challenges` and consumed once; never let the handlers run without `storeChallenge`/`getChallenge`.
 - Other devices: `/profile` creates a one-time device link (QR + URL, 10 min); admins create 24 h recovery links for others on `/admin`. Opening `/device/<token>` only looks the link up; logging in needs a POST from a button, because chat apps open links for previews.
 - Passkeys are bound to the hostname. Moving to another domain means everyone registers a new passkey via a new invite.
-- Secrets: `NUXT_SESSION_PASSWORD` (32+ chars) and `NUXT_ADMIN_SETUP_TOKEN`, set with `wrangler secret put`. Locally: `.env` for `npm run dev`, `.dev.vars` for `wrangler dev` (both gitignored).
+- Secrets: `NUXT_SESSION_PASSWORD` (32+ chars), `NUXT_ADMIN_SETUP_TOKEN` and `NUXT_DATA_KEY` (32+ chars), set with `wrangler secret put`.
+- **Encrypted columns:** user/household/invite names, list names, item text/quantity/reason and suggestion text/quantity use `encryptedText`, and `item_suggestions.normalized` uses `blindIndexText` (`server/db/encryption.ts`). Drizzle encrypts and decrypts them automatically; wrapping such a column in `sql\`\`` bypasses that. Never filter (`LIKE`), sort or search them in SQL; do it in code after reading. New user-content text columns should use `encryptedText` too. Locally: `.env` for `npm run dev`, `.dev.vars` for `wrangler dev` (both gitignored).
 
 ## Commands
 - Dev server: `npm run dev` (D1 runs locally via the Wrangler/Miniflare platform proxy; local data is separate from production).

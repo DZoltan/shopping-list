@@ -59,6 +59,7 @@ try {
       ...process.env,
       CF_PERSIST_DIR: join(stateDir, 'v3'),
       NUXT_ADMIN_SETUP_TOKEN: SETUP_TOKEN,
+      NUXT_DATA_KEY: 'e2e-data-key-0123456789abcdef0123456789',
       // Own build directory, so a running `npm run dev` is neither blocked nor overwritten.
       // It must stay inside the project, or the Cloudflare dev emulation loses the D1 binding.
       E2E_BUILD_DIR: '.nuxt-e2e',
@@ -67,7 +68,8 @@ try {
   })
   await waitForServer()
 
-  await run('node', [script, BASE, SETUP_TOKEN, ...extraArgs.map((a) => `"${a}"`)])
+  // E2E_STATE_DIR lets a test read the database directly (tests/auth.e2e.mjs checks what is stored)
+  await run('node', [script, BASE, SETUP_TOKEN, ...extraArgs.map((a) => `"${a}"`)], { env: { ...process.env, E2E_STATE_DIR: stateDir } })
   exitCode = 0
 } catch (error) {
   console.error(error.message)

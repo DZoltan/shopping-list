@@ -112,6 +112,25 @@ async function deleteUser() {
   }
 }
 
+// --- one-off: encrypt rows written before encryption existed ---
+const encrypting = ref(false)
+
+async function encryptExisting() {
+  encrypting.value = true
+  try {
+    // Each call converts one chunk; repeat until the server reports done
+    for (let i = 0; i < 1000; i++) {
+      const { done } = await $fetch<{ done: boolean }>('/api/admin/encrypt-existing', { method: 'POST' })
+      if (done) break
+    }
+    toast.add({ title: 'Minden régi adat titkosítva', color: 'success' })
+  } catch {
+    toast.add({ title: 'A titkosítás megszakadt. Próbáld újra, onnan folytatja.', color: 'error' })
+  } finally {
+    encrypting.value = false
+  }
+}
+
 const formatDate = (value: string) => new Date(value).toLocaleDateString('hu-HU', { month: 'long', day: 'numeric' })
 </script>
 
@@ -217,6 +236,20 @@ const formatDate = (value: string) => new Date(value).toLocaleDateString('hu-HU'
           />
         </li>
       </ul>
+    </section>
+
+    <section v-if="user?.isAdmin" class="space-y-3">
+      <h2 class="text-xl font-semibold">Adatok titkosítása</h2>
+      <p class="text-sm text-muted">
+        Az új adatok titkosítva kerülnek az adatbázisba. A titkosítás bevezetése előtt mentett neveket, listákat és tételeket ez a gomb titkosítja. Elég egyszer lefuttatni, és újra megnyomva sem árt.
+      </p>
+      <UButton
+        icon="i-lucide-lock"
+        label="Régi adatok titkosítása"
+        variant="outline"
+        :loading="encrypting"
+        @click="encryptExisting"
+      />
     </section>
 
     <UModal

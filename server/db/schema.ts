@@ -4,6 +4,7 @@ import type { WebAuthnCredential } from '#auth-utils'
 import { sql } from 'drizzle-orm'
 import { check, index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { HOUSEHOLD_ROLES, LIST_TYPES } from '../../shared/constants'
+import { blindIndexText, encryptedText } from './encryption'
 
 const createdAt = integer('created_at', { mode: 'timestamp' })
   .notNull()
@@ -21,7 +22,7 @@ const timestamps = {
 
 export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  name: text('name').notNull(),
+  name: encryptedText('name').notNull(),
   isAdmin: integer('is_admin', { mode: 'boolean' }).notNull().default(false),
   // Copied into the session at login; bumping it logs out every session that holds an older value
   sessionVersion: integer('session_version').notNull().default(0),
@@ -60,7 +61,7 @@ export const authChallenges = sqliteTable(
 
 export const households = sqliteTable('households', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  name: text('name').notNull(),
+  name: encryptedText('name').notNull(),
   ...timestamps,
 })
 
@@ -90,7 +91,7 @@ export const invites = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     // SHA-256 of the token in the invite link; the token itself is never stored
     tokenHash: text('token_hash').notNull().unique(),
-    name: text('name').notNull(),
+    name: encryptedText('name').notNull(),
     // null: the invitee gets a new household of their own (admin only)
     householdId: integer('household_id').references(() => households.id, { onDelete: 'cascade' }),
     role: text('role', { enum: HOUSEHOLD_ROLES }).notNull(),
@@ -135,7 +136,7 @@ export const lists = sqliteTable(
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
     type: text('type', { enum: LIST_TYPES }).notNull(),
-    name: text('name').notNull(),
+    name: encryptedText('name').notNull(),
     householdId: integer('household_id')
       .notNull()
       .references(() => households.id, { onDelete: 'cascade' }),
@@ -154,9 +155,9 @@ export const items = sqliteTable(
     listId: integer('list_id')
       .notNull()
       .references(() => lists.id, { onDelete: 'cascade' }),
-    text: text('text').notNull(),
-    quantity: text('quantity'),
-    reason: text('reason'),
+    text: encryptedText('text').notNull(),
+    quantity: encryptedText('quantity'),
+    reason: encryptedText('reason'),
     addedBy: integer('added_by').references(() => users.id, { onDelete: 'set null' }),
     done: integer('done', { mode: 'boolean' }).notNull().default(false),
     position: integer('position').notNull().default(0),
@@ -175,10 +176,10 @@ export const itemSuggestions = sqliteTable(
       .notNull()
       .references(() => households.id, { onDelete: 'cascade' }),
     type: text('type', { enum: LIST_TYPES }).notNull(),
-    // As last typed (for display) and normalized (for matching, see shared/text.ts)
-    text: text('text').notNull(),
-    normalized: text('normalized').notNull(),
-    lastQuantity: text('last_quantity'),
+    // As last typed (for display), and a blind index of the normalized text (shared/text.ts) for the unique key
+    text: encryptedText('text').notNull(),
+    normalized: blindIndexText('normalized').notNull(),
+    lastQuantity: encryptedText('last_quantity'),
     useCount: integer('use_count').notNull().default(1),
     lastUsedAt: integer('last_used_at', { mode: 'timestamp' }).notNull(),
     createdAt,
