@@ -7,9 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-23
+
+Upgrading: set the `NUXT_DATA_KEY` secret (32+ characters, keep a copy) before deploying,
+apply the migration, deploy, then press "Régi adatok titkosítása" on the admin page.
+
 ### Added
 
 - "Log out everywhere else" on the profile page.
+- Refresh button in the header: reloads everything on the page (tiles, items, suggestions)
+  without navigating away. Replaces "Refresh" in the list menu, which reloaded only the items.
 
 ### Changed
 
@@ -20,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- User, household and invite names, list names, item texts and suggestions are stored
+  encrypted (XChaCha20-Poly1305, key in the new `NUXT_DATA_KEY` secret); suggestions are
+  matched by an HMAC. Existing rows are converted with "Régi adatok titkosítása" on the
+  admin page.
 - Sessions are checked against the database on every request: a deleted user or a revoked
   session gets 401, and the app returns to the login page.
 
@@ -69,5 +80,6 @@ the Cloudflare free tier (Workers + D1).
   - GitHub Actions CI: type check, schema/migration drift check, build, e2e tests.
   - README, MIT license, `.env.example`.
 
-[Unreleased]: https://github.com/DZoltan/shopping-list/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/DZoltan/shopping-list/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/DZoltan/shopping-list/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/DZoltan/shopping-list/releases/tag/v0.1.0
