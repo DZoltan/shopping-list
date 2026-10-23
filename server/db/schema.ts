@@ -23,6 +23,8 @@ export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
   isAdmin: integer('is_admin', { mode: 'boolean' }).notNull().default(false),
+  // Copied into the session at login; bumping it logs out every session that holds an older value
+  sessionVersion: integer('session_version').notNull().default(0),
   ...timestamps,
 })
 

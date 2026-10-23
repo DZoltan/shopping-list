@@ -27,7 +27,9 @@ export function createPasskeyKit(base) {
   const ORIGIN = new URL(base).origin
 
   class Authenticator {
-    constructor() {
+    // userVerified: false acts like a security key without a PIN (only "user present" is set)
+    constructor({ userVerified = true } = {}) {
+      this.flags = userVerified ? 0x05 : 0x01
       const { privateKey, publicKey } = generateKeyPairSync('ec', { namedCurve: 'P-256' })
       this.privateKey = privateKey
       const jwk = publicKey.export({ format: 'jwk' })
@@ -40,7 +42,7 @@ export function createPasskeyKit(base) {
     }
     register(options) {
       const authData = Buffer.concat([
-        sha256(RP_ID), Buffer.from([0x45]), Buffer.alloc(4), Buffer.alloc(16),
+        sha256(RP_ID), Buffer.from([this.flags | 0x40]), Buffer.alloc(4), Buffer.alloc(16),
         Buffer.from([0, this.credId.length]), this.credId, this.cose,
       ])
       const attestationObject = cbor(new Map([['fmt', 'none'], ['attStmt', new Map()], ['authData', authData]]))
@@ -53,7 +55,7 @@ export function createPasskeyKit(base) {
     authenticate(options) {
       this.counter++
       const counter = Buffer.alloc(4); counter.writeUInt32BE(this.counter)
-      const authData = Buffer.concat([sha256(RP_ID), Buffer.from([0x05]), counter])
+      const authData = Buffer.concat([sha256(RP_ID), Buffer.from([this.flags]), counter])
       const clientDataJSON = this.clientData('webauthn.get', options.challenge)
       const signature = sign('sha256', Buffer.concat([authData, sha256(clientDataJSON)]), this.privateKey)
       return {

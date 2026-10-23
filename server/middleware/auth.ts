@@ -13,6 +13,12 @@ const PUBLIC_API_PREFIXES = [
 export default defineEventHandler(async (event) => {
   const path = event.path.split('?')[0]!
   if (!path.startsWith('/api/')) return
+  // The client (also during SSR) asks this endpoint whether it is logged in: a revoked session
+  // must answer 401 here too, so the page goes to /login instead of failing on every API call
+  if (path === '/api/_auth/session' && event.method === 'GET') {
+    if ((await getUserSession(event)).user) await requireUser(event)
+    return
+  }
   if (PUBLIC_API_PREFIXES.some((prefix) => path.startsWith(prefix))) return
-  await requireUserSession(event)
+  await requireUser(event)
 })

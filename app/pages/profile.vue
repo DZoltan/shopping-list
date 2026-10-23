@@ -40,12 +40,28 @@ async function removePasskey(id: string) {
   try {
     await $fetch(`/api/me/passkeys/${encodeURIComponent(id)}`, { method: 'DELETE' })
     await refreshPasskeys()
+    toast.add({ title: 'Passkey törölve, a többi eszközödön újra be kell lépni', color: 'success' })
   } catch (e) {
     toast.add({ title: (e as { statusCode?: number }).statusCode === 400 ? 'Az utolsó passkey-t nem törölheted.' : 'Nem sikerült törölni', color: 'error' })
   }
 }
 
-const formatDate = (value: string | null) =>
+// --- sessions ---
+const endingSessions = ref(false)
+
+async function endOtherSessions() {
+  endingSessions.value = true
+  try {
+    await $fetch('/api/me/sessions/end-others', { method: 'POST' })
+    toast.add({ title: 'Minden más eszközön kijelentkeztél', color: 'success' })
+  } catch {
+    toast.add({ title: 'Nem sikerült kijelentkeztetni a többi eszközt', color: 'error' })
+  } finally {
+    endingSessions.value = false
+  }
+}
+
+const formatDate =(value: string | null) =>
   value ? new Date(value).toLocaleDateString('hu-HU', { year: 'numeric', month: 'short', day: 'numeric' }) : 'még nem'
 </script>
 
@@ -102,6 +118,21 @@ const formatDate = (value: string | null) =>
         </li>
       </ul>
       <UButton icon="i-lucide-fingerprint" label="Passkey hozzáadása ehhez az eszközhöz" variant="outline" @click="addPasskey" />
+    </section>
+
+    <section class="space-y-3">
+      <h2 class="text-lg font-semibold">Bejelentkezett eszközök</h2>
+      <p class="text-sm text-muted">
+        Ha elveszett egy eszközöd, vagy máshol bejelentkezve hagytad a fiókod, itt mindenhonnan kijelentkezhetsz. Ez az eszköz bejelentkezve marad. Passkey törlésekor ez automatikusan megtörténik.
+      </p>
+      <UButton
+        icon="i-lucide-log-out"
+        label="Kijelentkezés minden más eszközön"
+        variant="outline"
+        color="error"
+        :loading="endingSessions"
+        @click="endOtherSessions"
+      />
     </section>
   </div>
 </template>

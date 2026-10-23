@@ -5,6 +5,12 @@ declare module '#auth-utils' {
     name: string
     isAdmin: boolean
   }
+
+  // Server-only part of the session, never sent to the client
+  interface SecureSessionData {
+    // users.session_version at login, see server/utils/auth.ts
+    sessionVersion?: number
+  }
 }
 
 export {}

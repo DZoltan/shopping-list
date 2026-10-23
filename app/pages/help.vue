@@ -25,7 +25,7 @@ const faq = [
   },
   {
     q: 'Új telefonom van, vagy elvesztettem a régit. Hogyan lépek be?',
-    a: 'Ha a passkey szinkronizált (Google, iCloud), az új telefonon is ott lesz. Ha nem: egy másik, bejelentkezett eszközön a Profil oldalon készíts QR-kódot, vagy kérj az admintól belépési linket. Belépés után hozz létre passkey-t az új eszközön, és a Profil oldalon töröld a régit.',
+    a: 'Ha a passkey szinkronizált (Google, iCloud), az új telefonon is ott lesz. Ha nem: egy másik, bejelentkezett eszközön a Profil oldalon készíts QR-kódot, vagy kérj az admintól belépési linket. Belépés után hozz létre passkey-t az új eszközön, és a Profil oldalon töröld a régit. Ilyenkor minden más eszközöd kijelentkezik, így az elveszett telefonon sem marad nyitva a fiókod.',
   },
   {
     q: 'Miért nem látom azonnal, amit a párom felírt?',
@@ -152,7 +152,10 @@ const faq = [
         Olvasd be a másik eszközzel, nyomd meg a <strong>Belépés</strong> gombot, majd hozz létre ott is passkey-t, hogy legközelebb
         link nélkül is be tudj lépni. A kód 10 percig él és egyszer használható; aki látja, be tud lépni a fiókodba, ezért ne mutasd meg másnak.
       </p>
-      <p>Ugyanitt látod és törölheted a passkey-idet, például egy elveszett telefonét.</p>
+      <p>
+        Ugyanitt látod és törölheted a passkey-idet, például egy elveszett telefonét. Passkey törlésekor, vagy a
+        <strong>Kijelentkezés minden más eszközön</strong> gombbal, minden más eszközöd kijelentkezik.
+      </p>
       <figure>
         <img src="/help-images/device-link.webp" alt="QR-kód a belépéshez másik eszközön" width="585" height="1140" loading="lazy">
         <figcaption>QR-kód a profil oldalon</figcaption>

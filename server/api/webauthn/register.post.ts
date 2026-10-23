@@ -14,7 +14,7 @@ export default defineWebAuthnRegisterEventHandler({
     return {
       rpName: 'Listák',
       // Discoverable credentials, so login needs no user name
-      authenticatorSelection: { residentKey: 'required', userVerification: 'preferred' },
+      authenticatorSelection: { residentKey: 'required', userVerification: 'required' },
     }
   },
 
@@ -29,12 +29,13 @@ export default defineWebAuthnRegisterEventHandler({
     } else if (user.setupToken) {
       await assertSetupAllowed(event, db, user.setupToken)
     } else {
-      await requireUserSession(event)
+      await requireUser(event)
     }
     return user
   },
 
-  async onSuccess(event, { user: body, credential }) {
+  async onSuccess(event, { user: body, credential, registrationInfo }) {
+    assertUserVerified(registrationInfo, 400)
     const user = registerUserSchema.parse(body)
     const db = useDb(event)
     const credentialRow = {
@@ -47,7 +48,7 @@ export default defineWebAuthnRegisterEventHandler({
 
     // Adding a passkey to the current account
     if (!user.inviteToken && !user.setupToken) {
-      const { user: current } = await requireUserSession(event)
+      const current = await requireUser(event)
       await db.insert(credentials).values({ ...credentialRow, userId: current.id })
       return
     }
@@ -64,7 +65,7 @@ export default defineWebAuthnRegisterEventHandler({
         db.insert(householdMembers).values({ householdId: household.id, userId: created.id, role: 'owner' }),
         db.insert(credentials).values({ ...credentialRow, userId: created.id }),
       ])
-      await setUserSession(event, { user: created })
+      await startSession(event, created)
       return
     }
 
@@ -107,7 +108,7 @@ export default defineWebAuthnRegisterEventHandler({
       ])
       throw error
     }
-    await setUserSession(event, { user: created })
+    await startSession(event, created)
   },
 })
 
@@ -135,6 +136,6 @@ function createUser(db: Db, values: { name: string, isAdmin: boolean }) {
   return db
     .insert(users)
     .values(values)
-    .returning({ id: users.id, name: users.name, isAdmin: users.isAdmin })
+    .returning({ id: users.id, name: users.name, isAdmin: users.isAdmin, sessionVersion: users.sessionVersion })
     .get()
 }

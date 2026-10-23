@@ -134,6 +134,9 @@ check('bob logs in with passkey', loginRes.status, 200)
 check('new session is bob', (await fresh.req('GET', '/api/me')).data.name, 'Bob')
 check('replayed login response is rejected', (await new Client('replay').req('POST', '/api/webauthn/authenticate', loginBody)).status, 400)
 check('unknown passkey -> 401', (await new Client('x').login(new Authenticator())).res.status, 401)
+bobKey.flags = 0x01 // user present, not verified
+check('login without user verification -> 401', (await new Client('x').login(bobKey)).res.status, 401)
+bobKey.flags = 0x05
 
 console.log('# device links')
 const tokenOf = (url) => url.split('/device/')[1]
@@ -161,6 +164,7 @@ console.log('# passkey management')
 check('bob has one passkey', (await bob.req('GET', '/api/me/passkeys')).data.length, 1)
 const bobPasskeyId = (await bob.req('GET', '/api/me/passkeys')).data[0].id
 check('last passkey cannot be deleted -> 400', (await bob.req('DELETE', `/api/me/passkeys/${bobPasskeyId}`)).status, 400)
+check('passkey without user verification is rejected -> 400', (await laptop.registerPasskey(new Authenticator({ userVerified: false }), { userName: 'Bob' })).status, 400)
 const bobLaptopKey = new Authenticator()
 check('logged-in bob adds a passkey on the laptop', (await laptop.registerPasskey(bobLaptopKey, { userName: 'Bob' })).status, 200)
 check('bob now has two passkeys', (await bob.req('GET', '/api/me/passkeys')).data.length, 2)
@@ -169,6 +173,23 @@ await admin.registerPasskey(new Authenticator(), { userName: 'Admin' })
 check("admin cannot delete bob's passkey -> 404", (await admin.req('DELETE', `/api/me/passkeys/${bobPasskeyId}`)).status, 404)
 check('bob deletes his first passkey', (await bob.req('DELETE', `/api/me/passkeys/${bobPasskeyId}`)).status, 204)
 check('deleted passkey cannot log in', (await new Client('x').login(bobKey)).res.status, 401)
+check('deleting a passkey keeps this session', (await bob.req('GET', '/api/me')).status, 200)
+check('deleting a passkey logs out the other devices', (await laptop.req('GET', '/api/me')).status, 401)
+check('... including device-link sessions', (await recovered.req('GET', '/api/me')).status, 401)
+check('... and the session endpoint says so too', (await fresh.req('GET', '/api/_auth/session')).status, 401)
+
+console.log('# log out everywhere else')
+const phone = new Client('bob-phone')
+await phone.login(bobLaptopKey)
+check('bob logs in again on another device', (await phone.req('GET', '/api/me')).status, 200)
+check('log out everywhere else needs a session -> 401', (await anon.req('POST', '/api/me/sessions/end-others')).status, 401)
+const phoneCookie = phone.cookie
+check('bob logs out everywhere else', (await bob.req('POST', '/api/me/sessions/end-others')).status, 204)
+check('the device that asked stays logged in', (await bob.req('GET', '/api/me')).data.name, 'Bob')
+check('the other device is logged out', (await phone.req('GET', '/api/lists')).status, 401)
+await new Client('x').login(bobLaptopKey)
+phone.cookie = phoneCookie // the 401 cleared it; send the revoked cookie itself again
+check('the revoked cookie stays out after a new login elsewhere', (await phone.req('GET', '/api/me')).status, 401)
 
 console.log('# admin')
 const usersList = (await admin.req('GET', '/api/admin/users')).data
@@ -176,7 +197,7 @@ check('admin lists 3 users', usersList.length, 3)
 const carolUser = usersList.find((u) => u.name === 'Carol')
 check('admin cannot delete self -> 400', (await admin.req('DELETE', `/api/admin/users/${adminMe.id}`)).status, 400)
 check('admin deletes carol', (await admin.req('DELETE', `/api/admin/users/${carolUser.id}`)).status, 204)
-check('deleted user loses access to everything', (await carol.req('GET', '/api/me')).data.households.length, 0)
+check("deleted user's session is rejected -> 401", (await carol.req('GET', '/api/me')).status, 401)
 check('deleted user cannot log in', (await new Client('x').login(carolKey)).res.status, 401)
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed')

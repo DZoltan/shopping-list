@@ -1,4 +1,5 @@
 import type { D1Database, ExecutionContext } from '@cloudflare/workers-types'
+import type { User } from '#auth-utils'
 
 // Bindings declared in wrangler.jsonc
 export interface Env {
@@ -11,5 +12,7 @@ declare module 'h3' {
       env: Env
       context: ExecutionContext
     }
+    // Set by requireUser (server/utils/auth.ts) after checking the session against the database
+    user?: User
   }
 }

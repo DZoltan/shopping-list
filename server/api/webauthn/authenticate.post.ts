@@ -6,6 +6,10 @@ export default defineWebAuthnAuthenticateEventHandler({
   storeChallenge,
   getChallenge: takeChallenge,
 
+  getOptions() {
+    return { userVerification: 'required' }
+  },
+
   async getCredential(event, credentialId) {
     const credential = await useDb(event).select().from(credentials).where(eq(credentials.id, credentialId)).get()
     if (!credential) throw createError({ statusCode: 401, statusMessage: 'Unknown passkey' })
@@ -13,6 +17,7 @@ export default defineWebAuthnAuthenticateEventHandler({
   },
 
   async onSuccess(event, { credential, authenticationInfo }) {
+    assertUserVerified(authenticationInfo, 401)
     const db = useDb(event)
     const [, user] = await db.batch([
       db
@@ -20,13 +25,13 @@ export default defineWebAuthnAuthenticateEventHandler({
         .set({ counter: authenticationInfo.newCounter, lastUsedAt: new Date() })
         .where(eq(credentials.id, credential.id)),
       db
-        .select({ id: users.id, name: users.name, isAdmin: users.isAdmin })
+        .select({ id: users.id, name: users.name, isAdmin: users.isAdmin, sessionVersion: users.sessionVersion })
         .from(users)
         .innerJoin(credentials, eq(credentials.userId, users.id))
         .where(eq(credentials.id, credential.id))
         .limit(1),
     ])
     if (!user[0]) throw createError({ statusCode: 401, statusMessage: 'Unknown passkey' })
-    await setUserSession(event, { user: user[0] })
+    await startSession(event, user[0])
   },
 })

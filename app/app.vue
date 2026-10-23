@@ -7,9 +7,7 @@ const { loggedIn, user, clear } = useUserSession()
 
 async function logout() {
   await clear()
-  clearNuxtData()
-  // Drop cached pages and API responses, so the next person on this device sees nothing of ours
-  if (import.meta.client && 'caches' in window) await caches.delete('pages-and-api')
+  await clearLocalData()
   await navigateTo('/login')
 }
 

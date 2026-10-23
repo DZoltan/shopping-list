@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- "Log out everywhere else" on the profile page.
+
+### Changed
+
+- Deleting a passkey logs out your other devices.
+- Passkeys must verify the user (fingerprint, face, PIN or screen lock); a touch alone is
+  no longer enough.
+- Admin rights are read from the database on every request, so a change takes effect at once.
+
+### Security
+
+- Sessions are checked against the database on every request: a deleted user or a revoked
+  session gets 401, and the app returns to the login page.
+
 ## [0.1.0] - 2026-10-22
 
 First release: a shared shopping and to-do list for households, running entirely on

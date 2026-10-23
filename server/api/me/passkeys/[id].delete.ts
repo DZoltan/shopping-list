@@ -2,8 +2,9 @@ import { and, count, eq } from 'drizzle-orm'
 import { credentialParamsSchema } from '#shared/schemas'
 import { credentials } from '../../../db/schema'
 
-// Removes one of your passkeys (e.g. of a lost phone). The last one is kept,
-// otherwise the account could only be reached again with a recovery link.
+// Removes one of your passkeys (e.g. of a lost phone) and logs out your other devices, since one of
+// them may be the lost one. The last passkey is kept, otherwise the account could only be reached
+// again with a recovery link.
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
   const { id } = await getValidatedRouterParams(event, credentialParamsSchema.parse)
@@ -17,6 +18,7 @@ export default defineEventHandler(async (event) => {
     .where(and(eq(credentials.id, id), eq(credentials.userId, user.id)))
     .returning({ id: credentials.id })
   if (deleted.length === 0) throw notFound('Passkey')
+  await endOtherSessions(event, user)
   setResponseStatus(event, 204)
   return null
 })

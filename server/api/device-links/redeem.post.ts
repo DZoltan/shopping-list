@@ -17,12 +17,13 @@ export default defineEventHandler(async (event) => {
   if (!link) throw createError({ statusCode: 400, statusMessage: 'Link is invalid, used or expired' })
 
   const user = await db
-    .select({ id: users.id, name: users.name, isAdmin: users.isAdmin })
+    .select({ id: users.id, name: users.name, isAdmin: users.isAdmin, sessionVersion: users.sessionVersion })
     .from(users)
     .where(eq(users.id, link.userId))
     .get()
   if (!user) throw createError({ statusCode: 400, statusMessage: 'Link is invalid, used or expired' })
 
-  await setUserSession(event, { user })
-  return user
+  await startSession(event, user)
+  const { sessionVersion: _, ...publicUser } = user
+  return publicUser
 })

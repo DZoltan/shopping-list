@@ -1,6 +1,6 @@
 # Plan: revoke sessions on other devices
 
-Status: planned, not started.
+Status: implemented (unreleased), not deployed yet.
 
 ## Problem
 
